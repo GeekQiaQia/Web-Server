@@ -1,0 +1,30 @@
+{
+  "name": "webservice",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "charenc": "0.0.2",
+    "cookie-parser": "^1.4.3",
+    "crypt": "0.0.2",
+    "debug": "~2.6.9",
+    "express": "^4.16.4",
+    "express-session": "^1.15.6",
+    "http-errors": "~1.6.2",
+    "jade": "^1.11.0",
+    "jsonwebtoken": "^8.4.0",
+    "mocha": "^5.2.0",
+    "morgan": "^1.9.1",
+    "node-uuid": "^1.4.8",
+    "sha1": "^1.1.1"
+  },
+  "devDependencies": {
+    "acl": "^0.4.11",
+    "mongoose": "^5.3.10",
+    "nodemon": "^1.18.6"
+  }
+}

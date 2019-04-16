@@ -1,0 +1,197 @@
+访问控制列表；
+
+
+acl（Access control lists）：存取控制清单。（基于node-npm）
+
+acl预热：引用acl
+var  acl  = require （' acl '） ;
+//  使用redis后端
+acl  = new acl（new acl.redisBackend（ redisClient ，  prefix ））;
+//  或使用内存后端
+acl  = new acl（new acl.memoryBackend（））;
+//  或使用mongodb后端
+acl  = new acl（new acl.mongodbBackend（ dbInstance ，  prefix ））;
+
+一、基本操作
+1-单个权限的分配：
+// guest is allowed to view blogs
+acl.allow('guest', 'blogs', 'view')
+
+// allow function accepts arrays as any parameter
+acl.allow('member', 'blogs', ['edit', 'view', 'delete'])
+
+//可以使用通配符
+acl.allow('admin', ['blogs', 'forums'], '*')
+
+2-创建角色的层次结构
+//
+acl.addRoleParents('baz '，['foo','bar'])
+1
+2
+3-模块化写法
+acl.allow([
+{
+roles:['guest', 'member'],
+allows:[
+{resources:'blogs', permissions:'get'},
+{resources:['forums', 'news'], permissions:['get', 'put', 'delete']}
+]
+},
+{
+roles:['gold', 'silver'],
+allows:[
+{resources:'cash', permissions:['sell', 'exchange']},
+{resources:['account', 'deposit'], permissions:['put', 'delete']}
+]
+}
+])
+
+4-权限查询
+acl.allowedPermissions('james', ['blogs', 'forums'], function(err, permissions){
+console.log(permissions)
+//[{'blogs' : ['get', 'delete']},{'forums':['get', 'put']}]
+//返回结果意为james这个角色对于博客有读取和删除的功能，对于论坛有读取和添加的功能
+})
+
+
+5-设立中间键
+简单地说，就是在向API发送请求时首先用ACL验证判断当前用户是否有权限操作此API，若验证通过则继续向下执行，否则返回403。
+
+app.route('/courses/lessons/:lessonId').all(acl.middleware).put(lesson.update)
+1
+二、方法介绍
+1-addUserRoles( userId, roles, callback)
+作用：给用户添加权限（roles可以是数组或字符串，所以可以一次可选定多条权限）。
+
+参数	类型意义
+userId	用户ID
+roles	功能、权限
+callback	回调函数
+2-removeUserRoles( userId, roles, callback)
+作用：将用户权限移除（roles可以是数组或字符串，所以可以一次可选定多条权限）。
+
+参数	类型意义
+userId	用户ID
+roles	功能、权限
+callback	回调函数
+3-userRoles( userId, callback)
+作用：查询用户所有权限。
+
+参数	类型意义
+userId	用户ID
+callback	回调函数
+4-roleUsers( userId, callback)
+作用：查询用户所有权限。
+
+参数	类型意义
+userId	用户ID
+callback	回调函数
+5-hasRole( userId,rolename,callback(err,hasRole))
+作用：查询用户是否拥有某个权限，回调函数中返回布尔值。
+
+参数	类型意义
+userId	用户ID
+roles	功能、权限
+callback	回调函数
+6-allowedPermissions( userId, rolename,callback(err,obj))
+作用：查询用户对于某资源的权限列表。
+
+参数	类型意义
+rolename	用户ID
+callback	回调函数
+更多方法
+
+三、nodejs权限控制模块
+1-权限设定
+//对外暴露invokeRolesPolicies
+exports.invokeRolesPolicies = function (acl) {
+//internal 将admin与superuser身份的角色分配resources数组中所有API的请求许可，允许的请求设定为get、put。
+acl.allow([{
+roles: ['admin', 'superuser'],
+allows: [{
+resources: [
+'/education/categories',
+'/education/categories/:categoryId',
+'/education/skills',
+'/education/skills/:skillId',
+'/education/skills/:categoryID',
+'/education/questions',
+'/education/questions/:questionId'
+],
+permissions: ['get','put']
+}]
+}]);
+//public API 将user与guest身份的角色分配resources数组中所有API的请求许可，允许所有请求方式。
+acl.allow([{
+roles: ['user', 'guest'],
+allows: [{
+resources: [
+'/gradeLevels',
+'/skills',
+'/subjects',
+'/categories',
+'/categories/:gradeLevel',
+'/categories/skills/:subjectCode/:gradeLevel',
+'/questions/:skillId'
+],
+permissions: ['*']
+}]
+}]);
+};
+
+2-权限验证
+//参数中role为当前用户的身份信息，req.route.path为权限设定文件的路径
+acl.areAnyRolesAllowed(roles, req.route.path, req.method.toLowerCase(), function (err, isAllowed) {
+if (err) {
+// An authorization error occurred.
+return res.send(responseHandler.getResponseData());
+} else {
+if (isAllowed) {
+
+// Access granted! Invoke next middleware
+return next();
+} else {
+return res.status(403).send(responseHandler.getResponseData('403'));
+}
+}
+});
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+3-权限验证的使用
+注：authHelper.isAllowed对应的操作就是发送当前用户的身份去进行权限验证，若权限验证通过则进入操作API的controller，否则终止并报错（没有权限）。
+
+//中间参数
+app.post('/app/auth/clients', authHelper.isAllowed, client.create);
+
+//app.all()中间键
+app.route('/app/tool/files')
+.all(authHelper.isAllowed)
+.get(files.list)
+.post(files.upload);
+1
+2
+3
+4
+5
+6
+7
+8
+END
+---------------------
+作者：StevenDIY
+来源：CSDN
+原文：https://blog.csdn.net/momDIY/article/details/75671584
+版权声明：本文为博主原创文章，转载请附上博文链接！
